@@ -18,6 +18,31 @@ except ImportError:
     FLASH_ATTN_AVAILABLE = False
     print("Warning: flash_attn not available, falling back to standard attention")
 
+# Import memory profiler
+import os
+
+def _get_memory_profiler():
+    """Get memory profiler class based on environment variable"""
+    enabled = os.environ.get('ENABLE_MEMORY_PROFILE', '0') == '1'
+    if enabled:
+        try:
+            from ...utils.memory_profiler import MemoryProfiler as RealProfiler
+            return RealProfiler
+        except ImportError:
+            pass
+    
+    # Dummy profiler that does nothing
+    class DummyProfiler:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+    return DummyProfiler
+
+MemoryProfiler = _get_memory_profiler()
+
 class MyCrossAttention(nn.Module):
     """
     Implements multi-head cross attention using Flash Attention where query and key/value sequences
